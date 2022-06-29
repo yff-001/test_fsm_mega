@@ -1,3 +1,5 @@
+/* work with test.py in pyserial tutorial */
+
 #include "proto.h"
 
 enum message_state_t {
@@ -13,35 +15,29 @@ struct message_packet_t {
 };
 
 void setup() {
+    DDRB |= (1 << PB7);
+
     Serial.begin(1000000);
-    Serial3.begin(115200);
 
-    uint8_t message[10] = {0};
-    dtostrf(-4095/121.0, 5, 3, message);                 // the value could be an ADC reading
-    if (message[0] != 0x2D) {                           // if first position is not '-'
-        uint8_t temp = 0;
-        for (uint8_t i=sizeof(message)/sizeof(message[0]);i>0;i--) {
-            message[i] = message[i-1];                  // right shift entire string by one position
+    char sample_message[] = {0x02, 0x41, 0x42, 0x03};
+
+    for (;;) {
+        while (Serial.available()) {
+            char u = Serial.read();
+            parse_message(u);
         }
-        message[0] = 0x2B;                              // put '+' at first position
-    } 
-    strcat(message, "V");
-    Serial.write(message, 10);
 
-    // for (;;) {
-    //     while (Serial3.available()) {
-    //         char u = Serial3.read();
-    //         parse_message(u);
-    //     }
-    // }
-    
-    for (auto i=33;i<127;i++) {
-        Serial3.write(i);
-        while (!Serial3.available());                   // block until response comes in
-        char u = Serial3.read();                        //
-        Serial.write(u);
-        PORTB ^= (1<<PB7);
-        delay(100);
+        /* check output on putty (all is good) */
+        // Serial.write(sample_message);
+        // delay(4000);
+
+        /* self generated to check finite state machine */
+        // static uint8_t i = 0;
+        // parse_message(sample_message[i++]);
+        // if (i > 3) {
+        //     i = 0;
+        // }
+        // delay(1000);
     }
 }
 
@@ -56,12 +52,14 @@ void parse_message(char payload) {
         case PARSE_START:
             if (payload == STX) {
                 state = PARSE_FIRST;
+                // blink();
             }
             break;
         case PARSE_FIRST:
             if (payload == 'A' || payload == 'B') {
                 packet.first = payload;
                 state = PARSE_SECOND;
+                // blink();
             }
             else {
                 state = PARSE_START;
@@ -73,6 +71,7 @@ void parse_message(char payload) {
             if (payload == 'A' || payload == 'B') {
                 packet.second = payload;
                 state = PARSE_END;
+                // blink();
             }
             else {
                 state = PARSE_START;
@@ -83,9 +82,7 @@ void parse_message(char payload) {
         case PARSE_END:
             if (payload == ETX) {
                 // do something with packet
-                Serial.write(packet.first);
-                Serial.write(packet.second);
-                Serial.write("\r\n");
+                blink();
                 state = PARSE_START;
             }
             else {
@@ -100,4 +97,8 @@ void parse_message(char payload) {
             packet.second = '\0';
             break;
     }
+}
+
+void blink() {
+    PORTB ^= (1 << PB7);
 }
