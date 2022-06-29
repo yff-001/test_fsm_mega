@@ -35,12 +35,13 @@ void setup() {
     //     }
     // }
     
-    Serial3.write(50);
-    for (;;) {
-        if (Serial3.available()) {
-            char u = Serial3.read();
-            Serial.write(u);
-        }
+    for (auto i=33;i<127;i++) {
+        Serial3.write(i);
+        while (!Serial3.available());                   // block until response comes in
+        char u = Serial3.read();                        //
+        Serial.write(u);
+        PORTB ^= (1<<PB7);
+        delay(100);
     }
 }
 
