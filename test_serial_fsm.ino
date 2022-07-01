@@ -1,4 +1,6 @@
-/* work with test.py in pyserial tutorial */
+/*  a finite state machine which parses ASCII coded serial message  
+    work with test.py in pyserial tutorial 
+*/
 
 #include "proto.h"
 
